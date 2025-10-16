@@ -1,57 +1,35 @@
-#let card_width = sys.inputs.at("card_width", default: 57mm)
-#let card_height = sys.inputs.at("card_height", default: 88mm)
-#let card_margin = sys.inputs.at("card_margin", default: 3mm)
-#let inner_margin = sys.inputs.at("inner_margin", default: 3mm)
-
-#let playing_card_template(doc) = [
-  #set text(font: "Orkney")
-  #set page(width: card_width, height: card_height, margin: card_margin)
-  #doc
-]
-
-#let default_suit_colors = (
-  spades: black,
-  clubs: black,
-  hearts: rgb("#ff0000"),
-  diamonds: rgb("#ff0000"),
+#let suits_symbols = (
+  hearts: sym.suit.heart,
+  diamonds: sym.suit.diamond,
+  clubs: sym.suit.club,
+  spades: sym.suit.spade
 )
 
-#let icon(suit, size, suits_colors) = {
-  if "." in suit {
-    return box[#image(suit, height: size)]
+#let corners_pos = (
+  (top + left, false),
+  (top + right, false),
+  (bottom + left, true),
+  (bottom + right, true),
+)
+
+#let suit_icon(suit, suit_image, icon_size) = {
+  if suit_image == none {
+    text(size: icon_size)[#suits_symbols.at(suit)]
   } else {
-    let suits = (
-      hearts: "♥",
-      diamonds: "♦",
-      clubs: "♣",
-      spades: "♠"
-    )
-    return text(size: size, suits_colors.at(suit))[#suits.at(suit)]
+    box[#image(suit_image, height: icon_size)]
   }
 }
 
-#let ranks = (
-  "1": "A",
-  "2": "2",
-  "3": "3",
-  "4": "4",
-  "5": "5",
-  "6": "6",
-  "7": "7",
-  "8": "8",
-  "9": "9",
-  "10": "10",
-  "11": "J",
-  "12": "Q",
-  "13": "K",
-)
-
-#let corners = (
-  (alignment.top + alignment.left, inner_margin, inner_margin),
-  (alignment.top + alignment.right, -inner_margin, inner_margin),
-  (alignment.bottom + alignment.left, inner_margin, -inner_margin),
-  (alignment.bottom + alignment.right, -inner_margin, -inner_margin),
-)
+#let display_corner(rank, suit, suit_image, flip: false) = {
+  let rotation = 0deg
+  if flip {
+    rotation = 180deg
+  }
+  box[#rotate(rotation)[#par(leading: 6pt)[
+      #text(size: 32pt, weight: "bold")[#rank]\
+      #suit_icon(suit, suit_image, 22pt)
+    ]]]
+}
 
 #let pip1 = ((0, 0),)
 #let pip2 = ((0, 1), (0, -1))
@@ -64,24 +42,12 @@
 #let pip9 = pip6 + ((0, 1.5), (0, -1.5), (0, -0.5))
 #let pip10 = pip8 + ((-0.5, -0.5), (0.5, -0.5))
 
-#let pip_positions = (
-  pip1,
-  pip1,
-  pip2,
-  pip3,
-  pip4,
-  pip5,
-  pip6,
-  pip7,
-  pip8,
-  pip9,
-  pip10,
-)
+#let pip_positions = (pip1, pip1, pip2, pip3, pip4, pip5, pip6, pip7, pip8, pip9, pip10)
 
-#let display_center_for_numbers(rank, suit, suits_colors, pip_size: 42pt) = {
+#let display_center_for_numbers(rank, suit, suit_image, pip_size: 42pt) = {
   let scale = 1.2 * pip_size
 
-  for pip in pip_positions.at(rank) {
+  for pip in pip_positions.at(int(rank)) {
     place(
       center + horizon,
       dx: pip.at(0) * scale,
@@ -89,32 +55,16 @@
     )[
       #if pip.at(1) > 0 {
         rotate(180deg)[
-          #icon(suit, pip_size, suits_colors)
+          #suit_icon(suit, suit_image, pip_size)
         ]
       } else {
-        icon(suit, pip_size, suits_colors)
+        suit_icon(suit, suit_image, pip_size)
       }
       
     ]
   }
-
 }
 
-#let display_corner(rank_str, suit, suits_colors, size: 32pt, flip: false) = align(center)[
-  
-  #let rotation = 0deg
-  #if flip {
-    rotation = 180deg
-  }
-
-  #box(width: size)[#align(center)[#rotate(rotation)[
-    #par(leading: 6pt)[
-      #text(size: size, weight: "bold", fill: suits_colors.at(suit))[#rank_str]\
-      #icon(suit, size/1.5, suits_colors)
-    ]
-  ]
-  ]]
-]
 
 /// Ceci est une carte de jeu.
 ///
@@ -125,36 +75,64 @@
 /// - suit_colors (dictionary): testest
 /// - ranks_label (dictionary): test
 /// -> 
-#let playing_card(
-  rank, suit, center_img: none, suit_icon: none,
-  suits_colors: (
-    spades: black,
-    clubs: black,
-    hearts: rgb("#ff0000"),
-    diamonds: rgb("#ff0000"),
-  ),
-  ranks_labels: ("★", "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K")
+#let custom_playing_card(
+  rank, suit,
+  suit_image: none,
+  suit_color: none,
+  center_img: none,
+  card_width: 57mm,
+  card_height: 88mm,
+  card_stroke: none,
+  card_fill: gray, // white
+  card_margin: 3mm,
 ) = {
-  assert(rank >= 0 and rank <= 13, message: "Rank must be between 0 and 13")
-
-  let flip = false
-  for pos in corners {
-    if pos.at(0).y == alignment.bottom {
-      flip = true
+  if suit_color == none {
+    suit_color = black
+    if "diamonds" == suit or "hearts" == suit {
+      suit_color = rgb("#ff0000")
     }
-    place(pos.at(0), dx: pos.at(1), dy: pos.at(2))[#display_corner(ranks_labels.at(rank), suit, suits_colors, flip: flip)]
   }
-  if center_img == none {
-    display_center_for_numbers(rank, suit, suits_colors)
-  } else {
-    align(center + horizon)[#image(center_img, width: card_width/2)]
+  if type(rank) == int {
+    rank = str(rank)
   }
+
+  box(
+    width: card_width, height: card_height,
+    stroke: card_stroke, fill: card_fill,
+    radius: 3mm, clip: true,
+  )[
+    #set align(center + horizon)
+    #set text(fill: suit_color)
+    #box(
+      width: card_width - 2*card_margin,
+      height: card_height - 2*card_margin,
+      fill: white, // none
+    )[
+      #for pos in corners_pos {
+        align(pos.at(0))[#display_corner(rank, suit, suit_image, flip: pos.at(1))]
+      }
+
+      #if center_img == none and rank in ("1", "2", "3", "4", "5", "6", "7", "8", "9", "10") {
+        display_center_for_numbers(rank, suit, suit_image)
+      } else if center_img != none {
+        image(center_img, width: card_width/2)
+      }
+
+    ]
+  ]
+  
+  
 }
 
 #let playing_card_back(img) = {
-  align(center + horizon)[#image(img, width: card_width, height: card_height)]
+  align(center + horizon)[#image(img, width: default_card_width, height: card_height)]
 }
 
+
+// #let custom_full_page_card = {
+//   set page(width: card_width, height: card_height, margin: card_margin)
+// }
+
+
 /// test
-#show: playing_card_template
-#playing_card(7, "hearts", center_img: none)
+#custom_playing_card(8, "clubs", center_img: none)

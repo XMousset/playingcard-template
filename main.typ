@@ -1,5 +1,7 @@
-#import "playing_card.typ" : playing_card, playing_card_back, playing_card_template
-#show : playing_card_template
+#import "playing_card.typ" : custom_playing_card, playing_card_back
+
+#set text(font: "Orkney")
+#set page(width: 57mm, height: 88mm, margin: 3mm)
 
 #let center_img(rank, suit) = {
   let rank_name = ranks.at(rank)
@@ -43,12 +45,12 @@
 // #align(center + horizon)[#image("inputs/joker_2.svg", width: card_width/1.5)]
 
 // test cases
-#playing_card("2", "diamonds")
+#custom_playing_card(2, "diamonds")
 // #pagebreak()
-// #playing_card("1", "spades")
+// #playing_card(1, "spades")
 // #pagebreak()
-// #playing_card("1", "hearts")
+// #playing_card(1, "hearts")
 // #pagebreak()
-// #playing_card("1", "clubs")
+// #playing_card(1, "clubs")
 // #pagebreak()
 // #playing_card_back("inputs/back.svg")
