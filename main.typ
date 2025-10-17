@@ -1,4 +1,4 @@
-#import "playing_card.typ" : custom_playing_card, playing_card_back
+#import "playing_card.typ" : custom_playing_card, custom_playing_card_back
 
 #set text(font: "Orkney")
 #set page(width: 57mm, height: 88mm, margin: 3mm)
